@@ -8,8 +8,24 @@ RSpec.describe Cask::Info, :cask do
 
   let(:args) { instance_double(Homebrew::Cmd::Info::Args) }
 
-  def uninstalled(string)
+  define_method(:uninstalled) do |string|
     "#{Tty.bold}#{string} #{Formatter.error("✘")}#{Tty.reset}"
+  end
+
+  define_method(:installed) do |string|
+    "#{Tty.bold}#{string} #{Formatter.success("✔")}#{Tty.reset}"
+  end
+
+  define_method(:cask_installed) do |cask_name, status|
+    cask = Cask::CaskLoader.load(cask_name)
+    allow(cask).to receive(:installed?).and_return(status)
+    allow(Cask::CaskLoader).to receive(:load).and_call_original
+    allow(Cask::CaskLoader).to receive(:load).with(cask_name).and_return(cask)
+  end
+
+  define_method(:formula_installed) do |formula_name, status|
+    formula = instance_double(Formula, name: formula_name, any_version_installed?: status)
+    allow(Formula).to receive(:[]).with(formula_name).and_return(formula)
   end
 
   before do
@@ -36,6 +52,7 @@ RSpec.describe Cask::Info, :cask do
 
   it "prints cask dependencies if the Cask has any" do
     allow_any_instance_of(StringIO).to receive(:tty?).and_return(true)
+    cask_installed("local-transmission-zip", true)
     expect do
       described_class.info(Cask::CaskLoader.load("with-depends-on-cask-multiple"), args:)
     end.to output(<<~EOS).to_stdout
@@ -48,7 +65,7 @@ RSpec.describe Cask::Info, :cask do
       #{ohai_title "Description"}
       #{Formatter.error("None")}
       #{ohai_title "Dependencies"}
-      #{uninstalled("local-caffeine (cask)")}, #{uninstalled("local-transmission-zip (cask)")}
+      #{uninstalled("local-caffeine (cask)")}, #{installed("local-transmission-zip (cask)")}
       #{ohai_title "Artifacts"}
       Caffeine.app (App)
     EOS
@@ -56,6 +73,8 @@ RSpec.describe Cask::Info, :cask do
 
   it "prints cask and formulas dependencies if the Cask has both" do
     allow_any_instance_of(StringIO).to receive(:tty?).and_return(true)
+    formula_installed("unar", true)
+    formula_installed("fileutils", false)
     expect do
       described_class.info(Cask::CaskLoader.load("with-depends-on-everything"), args:)
     end.to output(<<~EOS).to_stdout
@@ -68,7 +87,7 @@ RSpec.describe Cask::Info, :cask do
       #{ohai_title "Description"}
       #{Formatter.error("None")}
       #{ohai_title "Dependencies"}
-      #{uninstalled("unar")}, #{uninstalled("local-caffeine (cask)")}, #{uninstalled("with-depends-on-cask (cask)")}
+      #{installed("unar")}, #{uninstalled("fileutils")}, #{uninstalled("local-caffeine (cask)")}, #{uninstalled("with-depends-on-cask (cask)")}
       #{ohai_title "Artifacts"}
       Caffeine.app (App)
     EOS
