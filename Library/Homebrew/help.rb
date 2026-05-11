@@ -3,6 +3,7 @@
 
 require "cli/parser"
 require "commands"
+require "tap"
 require "utils/output"
 
 module Homebrew
@@ -70,6 +71,10 @@ module Homebrew
       output ||= if output.blank?
         opoo "No help text in: #{path}" if Homebrew::EnvConfig.developer?
         HOMEBREW_HELP_MESSAGE
+      end
+
+      if (tap = Tap.from_path(path))
+        output = "#{output.chomp}\n\nFrom tap: #{tap.name}\n"
       end
 
       output
