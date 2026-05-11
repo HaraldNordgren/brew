@@ -130,8 +130,8 @@ module Formatter
   # Layout objects in columns that fit the current terminal width.
   #
   # @api internal
-  sig { params(objects: T::Array[String], gap_size: Integer).returns(String) }
-  def self.columns(objects, gap_size: 2)
+  sig { params(objects: T::Array[String], gap_size: Integer, min_width: Integer).returns(String) }
+  def self.columns(objects, gap_size: 2, min_width: 0)
     objects = objects.flatten.map(&:to_s)
 
     fallback = proc do
@@ -143,13 +143,13 @@ module Formatter
 
     console_width = Tty.width
     object_lengths = objects.map { |obj| Tty.strip_ansi(obj).length }
-    cols = (console_width + gap_size) / (T.must(object_lengths.max) + gap_size)
+    max_length = [T.must(object_lengths.max), min_width].max
+    cols = (console_width + gap_size) / (max_length + gap_size)
 
     fallback.call if cols < 2
 
     rows = (objects.count + cols - 1) / cols
-    cols = (objects.count + rows - 1) / rows # avoid empty trailing columns
-
+    cols = (objects.count + rows - 1) / rows if min_width.zero? # avoid empty trailing columns
     col_width = ((console_width + gap_size) / cols) - gap_size
 
     gap_string = "".rjust(gap_size)
