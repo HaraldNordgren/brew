@@ -149,7 +149,7 @@ module Homebrew
       sig { params(tap: Tap, name: String, installed: T::Boolean).returns(String) }
       def decorate_formula(tap, name, installed:)
         outdated = installed && Formulary.factory("#{tap.name}/#{name}").outdated?
-        pretty_install_status(name, installed:, outdated:)
+        pretty_install_status(name, installed:, outdated:, dim: true)
       rescue
         pretty_installed(name)
       end
@@ -157,7 +157,7 @@ module Homebrew
       sig { params(tap: Tap, token: String, installed: T::Boolean).returns(String) }
       def decorate_cask(tap, token, installed:)
         outdated = installed && Cask::CaskLoader.load("#{tap.name}/#{token}").outdated?
-        pretty_install_status(token, installed:, outdated:)
+        pretty_install_status(token, installed:, outdated:, dim: true)
       rescue
         pretty_installed(token)
       end

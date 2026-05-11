@@ -20,6 +20,9 @@ module Tty
     def default; end
 
     sig { returns(String) }
+    def dim; end
+
+    sig { returns(String) }
     def down; end
 
     sig { returns(String) }

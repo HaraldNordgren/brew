@@ -292,20 +292,24 @@ module Utils
 
       # Keep status labels, colours and emoji in sync with
       # `pretty_uninstalled` in Library/Homebrew/utils.sh.
-      sig { params(string: String).returns(String) }
-      def pretty_uninstalled(string)
+      sig { params(string: String, dim: T::Boolean).returns(String) }
+      def pretty_uninstalled(string, dim: false)
         if !$stdout.tty?
           string
         elsif Homebrew::EnvConfig.no_emoji?
-          Formatter.error("#{Tty.bold}#{string} (uninstalled)#{Tty.reset}")
+          text = "#{Tty.bold}#{string} (uninstalled)#{Tty.reset}"
+          dim ? "#{Tty.dim}#{Tty.red}#{text}#{Tty.reset}" : Formatter.error(text)
         else
-          "#{Tty.bold}#{string} #{Formatter.error("✘")}#{Tty.reset}"
+          mark = dim ? "#{Tty.dim}#{Tty.red}✘#{Tty.reset}" : Formatter.error("✘")
+          "#{Tty.bold}#{string} #{mark}#{Tty.reset}"
         end
       end
 
-      sig { params(string: String, installed: T::Boolean, outdated: T::Boolean).returns(String) }
-      def pretty_install_status(string, installed:, outdated: false)
-        return pretty_uninstalled(string) unless installed
+      sig {
+        params(string: String, installed: T::Boolean, outdated: T::Boolean, dim: T::Boolean).returns(String)
+      }
+      def pretty_install_status(string, installed:, outdated: false, dim: false)
+        return pretty_uninstalled(string, dim:) unless installed
 
         outdated ? pretty_upgradable(string) : pretty_installed(string)
       end
