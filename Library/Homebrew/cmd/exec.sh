@@ -1,7 +1,7 @@
 # Documentation defined in Library/Homebrew/cmd/exec.rb
 
-# shellcheck disable=SC2154
-source "${HOMEBREW_LIBRARY}/Homebrew/cmd/which-formula.sh"
+# shellcheck disable=SC1091,SC2154
+source "${HOMEBREW_LIBRARY}/Homebrew/utils/executables-db.sh"
 
 exec-formula-name() {
   local formula="$1"
