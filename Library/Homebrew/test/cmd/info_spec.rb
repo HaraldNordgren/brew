@@ -313,6 +313,28 @@ RSpec.describe Homebrew::Cmd::Info do
       .and not_to_output.to_stderr
   end
 
+  it "shows separate blocks for an unqualified and a qualified input that resolve to the same shadowed formula" do
+    info = klass.new([])
+    core = installed_info_formula
+    keg_path = HOMEBREW_CELLAR/"testball/0.1"
+    tab = Tab.empty
+    tab.tabfile = keg_path/AbstractTab::FILENAME
+    tab.source["tap"] = "ataraxy-labs/tap"
+    tab.write
+    allow(core).to receive(:tap).and_return(Tap.fetch("homebrew/core"))
+    installed = formula("testball") { url "https://brew.sh/testball-0.1.tar.gz" }
+    allow(installed).to receive_messages(tap: Tap.fetch("ataraxy-labs/tap"), full_name: "ataraxy-labs/tap/testball")
+    allow(Formulary).to receive(:from_rack).with(core.rack).and_return(installed)
+    allow(info).to receive(:github_info).and_return("https://example.com/testball.rb")
+    allow(info.args.named).to receive_messages(
+      downcased_unique_named:                ["testball", "homebrew/core/testball"],
+      to_formulae_and_casks_and_unavailable: [core, core],
+    )
+
+    expect { info.send(:print_info) }
+      .to output(%r{ataraxy-labs/tap/testball.*homebrew/core/testball.*Not installed}m).to_stdout
+  end
+
   it "qualifies the name, reports not installed and shows the shadowing keg when the keg belongs to another tap" do
     info = klass.new([])
     formula = installed_info_formula

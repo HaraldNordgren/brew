@@ -103,6 +103,18 @@ RSpec.describe Formula do
     end
   end
 
+  describe "#comparison_key" do
+    let(:f) { formula("foo", tap: Tap.fetch("ataraxy-labs/tap")) { url "foo-1.0" } }
+
+    it "keys on the short name by default" do
+      expect(f.comparison_key).to eq([f.class, "foo", :stable])
+    end
+
+    it "keys on the tap-qualified full name when requested" do
+      expect(f.comparison_key(full_name: true)).to eq([f.class, "ataraxy-labs/tap/foo", :stable])
+    end
+  end
+
   describe "#follow_installed_alias?" do
     let(:f) do
       formula do

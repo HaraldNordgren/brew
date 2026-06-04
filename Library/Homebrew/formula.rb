@@ -2060,6 +2060,11 @@ class Formula
   # @api internal
   delegate pinned?: :@pin
 
+  sig { params(full_name: T::Boolean).returns([T.class_of(Formula), String, Symbol]) }
+  def comparison_key(full_name: false)
+    [self.class, full_name ? self.full_name : name, active_spec_sym]
+  end
+
   sig { params(other: T.untyped).returns(T::Boolean) }
   def ==(other)
     self.class == other.class &&

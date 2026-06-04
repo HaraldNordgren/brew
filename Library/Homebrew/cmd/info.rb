@@ -385,15 +385,27 @@ module Homebrew
 
       sig { params(quiet: T::Boolean).void }
       def print_info(quiet: false)
-        qualified_inputs = args.named.select { |name| name.include?("/") }.to_set
+        objects = args.named.to_formulae_and_casks_and_unavailable(uniq: false)
+        qualified = args.named.downcased_unique_named.map { |name| name.include?("/") }
+        resolved = qualified.zip(objects).map do |user_qualified, obj|
+          obj.is_a?(Formula) ? display_resolution(obj, user_qualified:) : [obj, nil]
+        end
+        displayed = resolved.uniq do |obj, _shadowed_by|
+          case obj
+          when Formula then obj.comparison_key(full_name: true)
+          when Cask::Cask then obj.full_name
+          else obj
+          end
+        end
 
-        args.named.to_formulae_and_casks_and_unavailable.each_with_index do |obj, i|
+        displayed.each_with_index do |(obj, shadowed_by), i|
           puts unless i.zero?
 
           case obj
-          when Formula, Cask::Cask
-            user_qualified = formula_qualified_by_user?(obj, qualified_inputs)
-            info_formula_or_cask(obj, quiet:, user_qualified:)
+          when Formula
+            quiet ? info_formula_summary(obj) : info_formula(obj, shadowed_by:)
+          when Cask::Cask
+            quiet ? info_cask_summary(obj) : info_cask(obj)
           when FormulaOrCaskUnavailableError
             # The formula/cask could not be found
             ofail obj.message
@@ -405,6 +417,13 @@ module Homebrew
             raise
           end
         end
+      end
+
+      sig { params(formula: Formula, user_qualified: T::Boolean).returns([Formula, T.nilable(Tap)]) }
+      def display_resolution(formula, user_qualified:)
+        return [formula, nil] if user_qualified
+
+        installed_resolution(formula)
       end
 
       sig { params(formula_or_cask: T.any(Formula, Cask::Cask), qualified_inputs: T::Set[String]).returns(T::Boolean) }
@@ -424,12 +443,8 @@ module Homebrew
       def info_formula_or_cask(formula_or_cask, quiet:, user_qualified: false)
         case formula_or_cask
         when Formula
-          if user_qualified
-            quiet ? info_formula_summary(formula_or_cask) : info_formula(formula_or_cask)
-          else
-            formula, shadowed_by = installed_resolution(formula_or_cask)
-            quiet ? info_formula_summary(formula) : info_formula(formula, shadowed_by:)
-          end
+          formula, shadowed_by = display_resolution(formula_or_cask, user_qualified:)
+          quiet ? info_formula_summary(formula) : info_formula(formula, shadowed_by:)
         when Cask::Cask
           quiet ? info_cask_summary(formula_or_cask) : info_cask(formula_or_cask)
         end
