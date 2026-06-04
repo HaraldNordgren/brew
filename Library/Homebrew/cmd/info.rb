@@ -447,6 +447,18 @@ module Homebrew
         [formula, nil]
       end
 
+      sig { params(formula: Formula).returns(T.nilable(Formula)) }
+      def shadowing_installed_formula(formula)
+        return if formula.installed_kegs.empty?
+
+        installed_tap = Tab.for_formula(formula).tap
+        return if installed_tap.nil? || installed_tap == formula.tap
+
+        Formulary.from_rack(formula.rack)
+      rescue FormulaUnavailableError, TapFormulaAmbiguityError
+        nil
+      end
+
       sig { params(formula: Formula, qualified_inputs: T::Set[String]).returns(Formula) }
       def swap_to_installed_formula(formula, qualified_inputs)
         return formula if formula_qualified_by_user?(formula, qualified_inputs)
@@ -602,7 +614,8 @@ module Homebrew
         attrs = []
         attrs << "keg-only" if formula.keg_only?
 
-        kegs = formula.installed_kegs
+        shadowing_formula = shadowing_installed_formula(formula)
+        kegs = shadowing_formula ? [] : formula.installed_kegs
         installed = kegs.any?
         outdated = installed && formula.outdated?
         if outdated && (upgrade_version = specs.first.presence)
@@ -610,7 +623,13 @@ module Homebrew
                               kegs.max_by(&:scheme_and_version)&.version
           specs[0] = "#{installed_version} → #{upgrade_version}"
         end
-        title_name = shadowed_by ? formula.name : formula.full_name
+        title_name = if shadowing_formula && (formula_tap = formula.tap)
+          "#{formula_tap}/#{formula.name}"
+        elsif shadowed_by
+          formula.name
+        else
+          formula.full_name
+        end
         name_with_status = pretty_install_status(
           title_name,
           installed:,
@@ -686,7 +705,7 @@ module Homebrew
         metadata = self.class.metadata_lines(formula)
         puts metadata if metadata.present?
 
-        installed_lines = installed_section_lines(formula, verbose: args.verbose?)
+        installed_lines = installed_section_lines(shadowing_formula || formula, verbose: args.verbose?)
         unless installed_lines.empty?
           ohai "Installed Kegs and Versions"
           installed_lines.each { |line| puts line }
