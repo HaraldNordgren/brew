@@ -9,6 +9,7 @@ raise "#{__FILE__} must not be loaded via `require`." if $PROGRAM_NAME != __FILE
 old_trap = trap("INT") { exit! 130 }
 
 require_relative "global"
+require "assumed_installed"
 require "build_options"
 require "keg"
 require "extend/ENV"
@@ -71,13 +72,11 @@ class Build
   def expand_deps
     formula.recursive_dependencies do |dependent, dep|
       build = effective_build_options_for(T.cast(dependent, Formula))
-      if dep.prune_from_option?(build) ||
-         dep.prune_if_build_and_not_dependent?(T.cast(dependent, Formula), formula) ||
-         (dep.test? && !dep.build?) || dep.implicit?
-        next Dependable::PRUNE
-      elsif dep.build?
-        next Dependable::KEEP_BUT_PRUNE_RECURSIVE_DEPS
-      end
+      next Dependable::PRUNE if dep.prune_from_option?(build) ||
+                                dep.prune_if_build_and_not_dependent?(T.cast(dependent, Formula), formula) ||
+                                (dep.test? && !dep.build?) || dep.implicit?
+      next Dependable::PRUNE if AssumedInstalled.include?(dep.name) && !dep.installed?
+      next Dependable::KEEP_BUT_PRUNE_RECURSIVE_DEPS if dep.build?
     end
   end
 

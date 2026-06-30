@@ -1250,4 +1250,36 @@ RSpec.describe FormulaInstaller do
       end
     end
   end
+
+  describe "#expand_dependencies" do
+    it "prunes formulae assumed to be provided outside Homebrew" do
+      dep_name = "homebrew-test-assumed-dep"
+      dep_path = CoreTap.instance.new_formula_path(dep_name)
+      dep_path.write <<~RUBY
+        class #{Formulary.class_s(dep_name)} < Formula
+          url "foo"
+          version "0.1"
+        end
+      RUBY
+      Formulary.cache.delete(dep_path)
+
+      f_name = "homebrew-test-assumed-dependent"
+      f_path = CoreTap.instance.new_formula_path(f_name)
+      f_path.write <<~RUBY
+        class #{Formulary.class_s(f_name)} < Formula
+          url "foo"
+          version "0.1"
+          depends_on "#{dep_name}"
+        end
+      RUBY
+      Formulary.cache.delete(f_path)
+
+      AssumedInstalled.add(dep_name)
+      installer = described_class.new(Formulary.factory(f_name))
+
+      expect(installer.send(:expand_dependencies).map(&:name)).not_to include(dep_name)
+    ensure
+      FileUtils.rm_f [dep_path, f_path]
+    end
+  end
 end

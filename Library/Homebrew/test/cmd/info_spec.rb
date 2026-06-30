@@ -37,6 +37,26 @@ RSpec.describe Homebrew::Cmd::Info do
 
   it_behaves_like "parseable arguments"
 
+  it "labels an assumed-installed formula as provided outside Homebrew" do
+    test_formula = formula("testball") do
+      T.bind(self, T.class_of(Formula))
+      url "https://brew.sh/testball-0.1.tar.gz"
+    end
+    AssumedInstalled.add("testball")
+
+    expect(described_class.new([]).send(:uninstalled_status, test_formula))
+      .to eq("Assumed installed: provided outside Homebrew; version not tracked")
+  end
+
+  it "labels an uninstalled formula as not installed" do
+    test_formula = formula("testball") do
+      T.bind(self, T.class_of(Formula))
+      url "https://brew.sh/testball-0.1.tar.gz"
+    end
+
+    expect(described_class.new([]).send(:uninstalled_status, test_formula)).to eq("Not installed")
+  end
+
   it "prints as json with the --json=v1 flag" do
     test_formula = formula("testball") do
       T.bind(self, T.class_of(Formula))

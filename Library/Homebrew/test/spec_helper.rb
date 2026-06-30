@@ -370,6 +370,7 @@ RSpec.configure do |config|
         HOMEBREW_LINKED_KEGS,
         HOMEBREW_PINNED_KEGS,
         HOMEBREW_PINNED_CASKS,
+        HOMEBREW_ASSUMED_INSTALLED,
         user_config_home/"trust.json",
         HOMEBREW_PREFIX/"Caskroom",
         HOMEBREW_PREFIX/"Frameworks",

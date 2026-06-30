@@ -41,6 +41,47 @@ RSpec.describe Utils::Output do
     end
   end
 
+  describe "#pretty_assumed_installed" do
+    subject(:pretty_assumed_installed_output) { described_class.pretty_assumed_installed("foo") }
+
+    context "when $stdout is a TTY" do
+      before { allow($stdout).to receive(:tty?).and_return(true) }
+
+      context "with HOMEBREW_NO_EMOJI unset" do
+        it "returns a string with a colored warning triangle" do
+          expect(pretty_assumed_installed_output)
+            .to match(/#{esc 1}foo #{esc 33}⚠#{esc 0}/)
+        end
+      end
+
+      context "with HOMEBREW_NO_EMOJI set" do
+        before { ENV["HOMEBREW_NO_EMOJI"] = "1" }
+
+        it "returns a string with the assumed-installed label" do
+          expect(pretty_assumed_installed_output)
+            .to match(/#{esc 1}foo \(assumed installed\)#{esc 0}/)
+        end
+      end
+    end
+
+    context "when $stdout is not a TTY" do
+      before { allow($stdout).to receive(:tty?).and_return(false) }
+
+      it "returns plain text" do
+        expect(pretty_assumed_installed_output).to eq("foo")
+      end
+    end
+  end
+
+  describe "#pretty_install_status" do
+    before { allow($stdout).to receive(:tty?).and_return(true) }
+
+    it "renders a warning triangle for an assumed-installed formula" do
+      expect(described_class.pretty_install_status("foo", installed: false, assumed_installed: true))
+        .to match(/foo #{esc 33}⚠#{esc 0}/)
+    end
+  end
+
   describe "#pretty_upgradable" do
     context "when $stdout is a TTY" do
       before { allow($stdout).to receive(:tty?).and_return(true) }

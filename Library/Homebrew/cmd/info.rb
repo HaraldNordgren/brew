@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "abstract_command"
+require "assumed_installed"
 require "missing_formula"
 require "caveats"
 require "options"
@@ -601,6 +602,15 @@ module Homebrew
         "#{name}#{": #{description}" if description.present?}"
       end
 
+      sig { params(formula: Formula).returns(String) }
+      def uninstalled_status(formula)
+        if AssumedInstalled.include?(formula.name)
+          "Assumed installed: provided outside Homebrew; version not tracked"
+        else
+          "Not installed"
+        end
+      end
+
       sig { params(formula: Formula).void }
       def info_formula_summary(formula)
         kegs = formula.installed_kegs
@@ -613,7 +623,7 @@ module Homebrew
         puts oh1_title(info_summary_title(formula.full_name, formula.desc, installed: kegs.any?))
         if kegs.empty?
           puts "Formula from #{github_info(formula)}"
-          puts "Not installed"
+          puts uninstalled_status(formula)
         else
           puts "Formula from #{formula.tap&.name ||
                                 T.cast(tab.source["tap"], T.nilable(String)) ||
@@ -659,11 +669,12 @@ module Homebrew
         end
         name_with_status = pretty_install_status(
           title_name,
-          warning:    missing_libraries.present?,
+          warning:           missing_libraries.present?,
           installed:,
           outdated:,
-          deprecated: formula.deprecated?,
-          disabled:   formula.disabled?,
+          assumed_installed: AssumedInstalled.include?(formula.name),
+          deprecated:        formula.deprecated?,
+          disabled:          formula.disabled?,
         )
 
         puts "#{oh1_title(name_with_status)}: #{specs * ", "}#{" [#{attrs * ", "}]" unless attrs.empty?}"
@@ -709,7 +720,7 @@ module Homebrew
           *versioned.sort_by(&:scheme_and_version),
         ]
         if kegs.empty?
-          puts "Not installed"
+          puts uninstalled_status(formula)
           if (bottle = formula.bottle)
             begin
               bottle.fetch_tab(quiet: !args.debug?) if args.fetch_manifest? || args.verbose?
@@ -900,9 +911,10 @@ module Homebrew
             nil
           end
           installed ||= formula.any_version_installed? if !installed && formula
+          assumed_installed = AssumedInstalled.include?(dep.name)
           outdated = T.let(installed && formula&.outdated? == true, T::Boolean)
           warning = missing_library_deps.include?(Utils.name_from_full_name(dep.name))
-          pretty_install_status(display, warning:, installed:, outdated:, mark_uninstalled:)
+          pretty_install_status(display, warning:, installed:, outdated:, assumed_installed:, mark_uninstalled:)
         end.join(", ")
       end
 

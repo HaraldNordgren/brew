@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "extend/ENV/shared"
+require "assumed_installed"
 require "development_tools"
 require "utils/output"
 
@@ -181,6 +182,10 @@ module Superenv
     path.append(deps.map(&:opt_bin))
     path.append(homebrew_extra_paths)
     path.append("/usr/bin", "/bin", "/usr/sbin", "/sbin")
+
+    # Make externally-provided (assumed-installed) dependencies findable by
+    # appending the user's login PATH at the lowest priority.
+    path.append(ORIGINAL_PATHS) if AssumedInstalled.any?
 
     begin
       path.append(gcc_version_formula(T.must(homebrew_cc)).opt_bin) if homebrew_cc&.match?(GNU_GCC_REGEXP)

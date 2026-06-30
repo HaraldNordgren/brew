@@ -56,6 +56,9 @@ HOMEBREW_PINNED_KEGS = (HOMEBREW_PREFIX/"var/homebrew/pinned").freeze
 # Where we store symlinks to currently version-pinned casks
 HOMEBREW_PINNED_CASKS = (HOMEBREW_PREFIX/"var/homebrew/pinned_casks").freeze
 
+# Where we record formulae assumed to be provided outside Homebrew
+HOMEBREW_ASSUMED_INSTALLED = (HOMEBREW_PREFIX/"var/homebrew/assumed-installed").freeze
+
 # Where we store lock files
 HOMEBREW_LOCKS = (HOMEBREW_PREFIX/"var/homebrew/locks").freeze
 
