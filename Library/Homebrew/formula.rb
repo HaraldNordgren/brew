@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "assumed_installed"
 require "autobump_constants"
 require "cache_store"
 require "did_you_mean"
@@ -3742,6 +3743,7 @@ class Formula
       CURL_HOME:               ENV.fetch("CURL_HOME") { home.to_s },
       PYTHONDONTWRITEBYTECODE: "1",
       XDG_CONFIG_HOME:         "#{home}/.config",
+      XDG_CACHE_HOME:          "#{home}/.cache",
     }
   end
 
@@ -3758,7 +3760,7 @@ class Formula
       }
 
       unless interactive
-        stage_env[:HOME] = env_home
+        stage_env[:HOME] = env_home if AssumedInstalled.none?
         stage_env.merge!(common_sandbox_env(env_home))
       end
 

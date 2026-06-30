@@ -1137,6 +1137,7 @@ RSpec.describe Formula do
       "NPM_CONFIG_USERCONFIG" => File::NULL,
       "PIP_CONFIG_FILE"       => File::NULL,
       "XDG_CONFIG_HOME"       => "#{env.fetch("HOME")}/.config",
+      "XDG_CACHE_HOME"        => "#{env.fetch("HOME")}/.cache",
     )
   end
 
@@ -3243,6 +3244,7 @@ RSpec.describe Formula do
         NPM_CONFIG_USERCONFIG: File::NULL,
         PIP_CONFIG_FILE:       File::NULL,
         XDG_CONFIG_HOME:       (home/".config").to_s,
+        XDG_CACHE_HOME:        (home/".cache").to_s,
       )
     end
   end

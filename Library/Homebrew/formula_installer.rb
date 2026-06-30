@@ -3,6 +3,7 @@
 
 require "formula"
 require "api/formula_bottle"
+require "assumed_installed"
 require "keg"
 require "tab"
 require "utils/bottles"
@@ -644,6 +645,12 @@ on_request: installed_on_request?, options:)
     build_bottle_postinstall if build_bottle?
 
     opoo "Nothing was installed to #{formula.prefix}" unless formula.latest_version_installed?
+
+    if installed_on_request? && AssumedInstalled.include?(formula.name)
+      AssumedInstalled.remove(formula.name)
+      opoo "#{formula.name} was assumed installed and is now managed by Homebrew."
+    end
+
     end_time = Time.now
     Homebrew.messages.package_installed(formula.name, end_time - start_time)
   end
@@ -806,6 +813,7 @@ on_request: installed_on_request?, options:)
       end
 
       next Dependable::SKIP if satisfied
+      next Dependable::PRUNE if AssumedInstalled.include?(dep.name)
     end
   end
 
