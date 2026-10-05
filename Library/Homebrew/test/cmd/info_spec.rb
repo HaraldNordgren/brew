@@ -1464,7 +1464,8 @@ RSpec.describe Homebrew::Cmd::Info do
         .and not_to_output.to_stderr
     end
 
-    it "shows installed → latest only on the newest installed keg of an outdated formula" do
+    it "does not show status markers on installed keg rows" do
+      allow_any_instance_of(StringIO).to receive(:tty?).and_return(true)
       info = described_class.new([])
       main_formula = formula("testball") do
         T.bind(self, T.class_of(Formula))
@@ -1484,8 +1485,7 @@ RSpec.describe Homebrew::Cmd::Info do
       allow(info).to receive(:github_info).with(main_formula).and_return("https://example.com/testball.rb")
 
       expect { info.info_formula(main_formula) }
-        .to output(/==> Installed Versions\n.*testball\b.*\s+1\.0 → 2\.0\s+\(/).to_stdout
-        .and not_to_output(/0\.9 →/).to_stdout
+        .to output(/\A==> testball ↑: 1\.0 → stable 2\.0\n.*==> Installed Versions\ntestball 1\.0 \(/m).to_stdout
         .and not_to_output.to_stderr
     end
 

@@ -825,19 +825,17 @@ module Homebrew
           ordered_kegs.each_with_index.map { |keg, index| [other, keg, index.zero?] }
         end
         with_kegs = with_kegs.select { |_other, keg, newest| newest || keg.linked? } unless verbose
-        rows = with_kegs.map do |other, keg, newest|
-          name_status = pretty_install_status(other.full_name, installed: true, outdated: other.outdated?)
+        rows = with_kegs.map do |other, keg|
+          name = pretty_unmarked(other.full_name)
           version = keg.version.to_s
-          latest = other.pkg_version.to_s
-          version = "#{version} → #{latest}" if newest && other.outdated? && latest != version
           linked_marker = keg.linked? ? "[Linked]" : ""
-          [name_status, version, "(#{keg.abv})", linked_marker, keg]
+          [name, version, "(#{keg.abv})", linked_marker, keg]
         end
         name_width = rows.map { |r| Tty.strip_ansi(r[0]).length }.max || 0
         version_width = rows.map { |r| r[1].length }.max || 0
         size_width = rows.map { |r| r[2].length }.max || 0
-        rows.flat_map do |name_status, version, size, linked_marker, keg|
-          padded_name = name_status + (" " * (name_width - Tty.strip_ansi(name_status).length))
+        rows.flat_map do |name, version, size, linked_marker, keg|
+          padded_name = name + (" " * (name_width - Tty.strip_ansi(name).length))
           padded_size = linked_marker.empty? ? size : size.ljust(size_width)
           line = "#{padded_name} #{version.ljust(version_width)} #{padded_size}" \
                  "#{" #{linked_marker}" unless linked_marker.empty?}"
