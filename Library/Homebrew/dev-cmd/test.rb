@@ -60,7 +60,9 @@ module Homebrew
 
           # Don't test formulae missing test dependencies
           missing_test_deps = f.recursive_dependencies do |dependent, dependency|
-            next Dependable::PRUNE if dependency.installed?
+            next Dependable::PRUNE if dependency.installed?(
+              minimum_compatibility_version: dependency.to_formula.compatibility_version,
+            )
             next if dependency.test? && dependent == f
 
             next Dependable::PRUNE unless dependency.required?

@@ -44,6 +44,37 @@ RSpec.describe Homebrew::DevCmd::Test do
     end
   end
 
+  it "tests a formula with an outdated dependency with a matching compatibility_version" do
+    cmd = described_class.new(["foo"])
+    foo = formula("foo") do
+      T.bind(self, T.class_of(Formula))
+      url "https://brew.sh/foo-1.0.tar.gz"
+
+      test do
+        true
+      end
+    end
+    bar = formula("bar") do
+      T.bind(self, T.class_of(Formula))
+      url "https://brew.sh/bar-1.0.tar.gz"
+    end
+    dependency = Dependency.new(bar.name)
+    allow(bar).to receive(:compatibility_version).and_return(1)
+    allow(dependency).to receive_messages(to_formula: bar, installed?: false)
+    allow(dependency).to receive(:installed?).with(minimum_compatibility_version: 1).and_return(true)
+    allow(cmd.args.named).to receive(:to_resolved_formulae).and_return([foo])
+    allow(foo).to receive_messages(latest_version_installed?: true, linked?: true, deps: [dependency])
+    allow(Utils::GemSetup).to receive(:install_bundler_gems!)
+    allow(Homebrew::DownloadQueue).to receive(:new)
+      .and_return(instance_double(Homebrew::DownloadQueue, enqueue: nil, fetch: nil, shutdown: nil,
+                                                            failed_downloads: []))
+    allow(Sandbox).to receive(:run_or_fork)
+
+    cmd.run
+
+    expect(Homebrew.failed?).to be(false)
+  end
+
   it "tests a given Formula without process-listing warnings", :integration_test do
     skip "Nested sandboxing is not supported." if Sandbox.nested_sandbox?
 
